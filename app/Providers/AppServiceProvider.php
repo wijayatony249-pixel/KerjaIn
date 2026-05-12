@@ -23,5 +23,9 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.url')) {
             URL::forceRootUrl(config('app.url'));
         }
+
+        if (config('app.env') === 'production' || (config('app.url') && str_contains(config('app.url'), 'https'))) {
+            URL::forceScheme('https');
+        }
     }
 }
