@@ -1,6 +1,8 @@
 <template>
   <AppLayout title="Portfolio Saya">
     <div class="relative z-10">
+      <BackButton href="/dashboard" label="Kembali ke Dashboard" />
+
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>
           <h1 class="text-4xl font-black uppercase tracking-tighter mb-2 text-white">Portfolio Saya</h1>
@@ -24,7 +26,7 @@
           <div class="h-64 bg-white/5 relative overflow-hidden">
             <img :src="'/storage/' + item.image" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
             <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center p-8 text-center">
-                <button @click="deleteItem(item.id)" class="bg-[#FF3366] text-white px-6 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-[#FF3366] transition-all mb-4">Hapus Item</button>
+                <button @click="confirmDeleteItem(item)" class="bg-[#FF3366] text-white px-6 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-[#FF3366] transition-all mb-4">Hapus Item</button>
             </div>
           </div>
           <div class="p-8">
@@ -64,7 +66,9 @@
           
           <div class="flex justify-between items-center mb-10">
             <h2 class="text-3xl font-black uppercase tracking-tighter text-white">Tambah Portfolio</h2>
-            <button @click="showAddModal = false" class="text-white/20 hover:text-white transition-colors text-2xl">×</button>
+            <button @click="showAddModal = false" class="text-white/20 hover:text-white transition-all p-2 hover:bg-white/5 rounded-md z-30">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
           </div>
 
           <form @submit.prevent="saveItem" class="space-y-8">
@@ -107,20 +111,35 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal 
+      :show="showDeleteModal"
+      title="Hapus Portfolio"
+      message="Apakah Anda yakin ingin menghapus karya ini? Tindakan ini tidak dapat dibatalkan."
+      @confirm="executeDeleteItem"
+      @close="showDeleteModal = false"
+    />
   </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import AppLayout from '../../Layouts/AppLayout.vue'
+import BackButton from '../../Components/BackButton.vue'
+import ConfirmModal from '../../Components/ConfirmModal.vue'
 import { useApi } from '../../composables/useApi'
+import { useToast } from '../../composables/useToast'
 
 const { get, post, del } = useApi()
+const { addToast } = useToast()
 
 const portfolios = ref([])
 const showAddModal = ref(false)
 const loading = ref(false)
 const previewUrl = ref(null)
+
+const showDeleteModal = ref(false)
+const itemToDelete = ref(null)
 
 const form = ref({
     title: '',
@@ -158,20 +177,29 @@ const saveItem = async () => {
         showAddModal.value = false
         form.value = { title: '', description: '', image: null }
         previewUrl.value = null
+        addToast('Karya berhasil ditambahkan ke portfolio!')
     } catch (error) {
-        alert('Gagal mengunggah portfolio')
+        addToast('Gagal mengunggah portfolio', 'error')
     } finally {
         loading.value = false
     }
 }
 
-const deleteItem = async (id) => {
-    if (!confirm('Hapus item ini dari portfolio?')) return
+const confirmDeleteItem = (item) => {
+    itemToDelete.value = item
+    showDeleteModal.value = true
+}
+
+const executeDeleteItem = async () => {
+    if (!itemToDelete.value) return
     try {
-        await del(`/portfolios/${id}`)
-        portfolios.value = portfolios.value.filter(p => p.id !== id)
+        await del(`/portfolios/${itemToDelete.value.id}`)
+        portfolios.value = portfolios.value.filter(p => p.id !== itemToDelete.value.id)
+        showDeleteModal.value = false
+        itemToDelete.value = null
+        addToast('Item portfolio berhasil dihapus')
     } catch (error) {
-        alert('Gagal menghapus item')
+        addToast('Gagal menghapus item', 'error')
     }
 }
 

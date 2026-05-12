@@ -6,6 +6,10 @@
       <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-[#1A56FF]/10 rounded-full blur-[120px]"></div>
     </div>
 
+    <div class="relative z-10 mb-12">
+      <BackButton href="/" label="Back to Landing Page" />
+    </div>
+
     <div v-if="isFreelancer" class="space-y-12 relative z-10">
       <!-- Freelancer Stats -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -124,6 +128,7 @@ import { Link } from '@inertiajs/vue3'
 import AppLayout from '../Layouts/AppLayout.vue'
 import StatCard from '../Components/StatCard.vue'
 import StatusBadge from '../Components/StatusBadge.vue'
+import BackButton from '../Components/BackButton.vue'
 import { useAuth } from '../composables/useAuth'
 import { useApi } from '../composables/useApi'
 

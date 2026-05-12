@@ -6,6 +6,11 @@
       <div class="absolute bottom-1/4 -left-32 w-96 h-96 bg-[#6C63FF]/10 rounded-full blur-[120px]"></div>
     </div>
 
+    <!-- Top Navigation -->
+    <div class="absolute top-10 left-10 z-50">
+      <BackButton href="/" label="Beranda" />
+    </div>
+
     <div class="w-full max-w-2xl relative z-10">
       <div class="text-center mb-10">
         <div class="text-3xl font-black tracking-tighter mb-2">
@@ -106,6 +111,7 @@
 
 <script setup>
 import { Link, useForm } from '@inertiajs/vue3';
+import BackButton from '../../Components/BackButton.vue';
 
 const form = useForm({
   name: '',

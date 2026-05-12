@@ -1,13 +1,6 @@
 <template>
   <AppLayout title="Detail Layanan">
-    <div class="mb-8">
-      <Link href="/layanan" class="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] hover:text-white flex items-center gap-3 transition-all group">
-        <div class="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center group-hover:bg-[#FF3366]/10 group-hover:text-[#FF3366] transition-all">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        </div>
-        Kembali ke Jelajah Layanan
-      </Link>
-    </div>
+    <BackButton href="/layanan" label="Kembali ke Jelajah Layanan" />
 
     <div v-if="service" class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start relative z-10">
       <!-- Left: Content -->
@@ -133,7 +126,9 @@
                     <h2 class="text-4xl font-black uppercase tracking-tighter text-white mb-2">Konfirmasi</h2>
                     <p class="text-white/30 text-[10px] font-black uppercase tracking-widest">Selesaikan detail pesanan Anda</p>
                   </div>
-                  <button @click="showOrderModal = false" class="text-white/20 hover:text-white transition-colors text-2xl font-light">×</button>
+                  <button @click="showOrderModal = false" class="text-white/20 hover:text-white transition-all p-2 hover:bg-white/5 rounded-md z-30">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
               </div>
 
               <div class="space-y-8 mb-12">
@@ -169,6 +164,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '../../Layouts/AppLayout.vue'
+import BackButton from '../../Components/BackButton.vue'
 import StatusBadge from '../../Components/StatusBadge.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'

@@ -35,7 +35,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/booking/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     
     // Profile
-    Route::get('/profil', [ProfileController::class, 'edit'])->name('profile');
+    Route::get('/profil', [ProfileController::class, 'index'])->name('profile');
+    Route::get('/profil/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profil', [ProfileController::class, 'update'])->name('profile.update');
     
     // Portfolio

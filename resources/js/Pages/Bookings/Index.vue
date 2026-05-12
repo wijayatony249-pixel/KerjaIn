@@ -1,6 +1,7 @@
 <template>
   <AppLayout title="Daftar Pesanan">
     <div class="relative z-10">
+      <BackButton href="/dashboard" label="Kembali ke Dashboard" />
       <!-- Tab Bar -->
       <div class="flex gap-4 border-b border-white/5 mb-10 overflow-x-auto pb-4">
         <button 
@@ -120,6 +121,7 @@ import { Link } from '@inertiajs/vue3'
 import AppLayout from '../../Layouts/AppLayout.vue'
 import StatCard from '../../Components/StatCard.vue'
 import StatusBadge from '../../Components/StatusBadge.vue'
+import BackButton from '../../Components/BackButton.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'
 

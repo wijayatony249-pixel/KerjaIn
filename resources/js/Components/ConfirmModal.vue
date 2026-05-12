@@ -5,6 +5,10 @@
         <!-- Background Glow -->
         <div class="absolute top-0 right-0 w-64 h-64 bg-[#FF3366]/5 rounded-full blur-[100px] pointer-events-none"></div>
         
+        <button @click="$emit('close')" class="absolute top-6 right-6 text-white/20 hover:text-white transition-all p-2 hover:bg-white/5 rounded-md z-30">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+
         <!-- Icon -->
         <div class="w-20 h-20 bg-[#FF3366]/10 rounded-xl flex items-center justify-center mx-auto mb-8 border border-[#FF3366]/20">
           <svg class="w-10 h-10 text-[#FF3366]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,7 +21,7 @@
 
         <div class="flex gap-4">
           <button 
-            @click="$emit('cancel')"
+            @click="$emit('close')"
             class="flex-1 bg-white/5 text-white font-black py-4 rounded-md hover:bg-white/10 transition-all uppercase tracking-widest text-[10px] border border-white/10"
           >
             Batal
@@ -26,7 +30,7 @@
             @click="$emit('confirm')"
             class="flex-1 bg-[#FF3366] text-white font-black py-4 rounded-md hover:bg-[#e02d59] transition-all uppercase tracking-widest text-[10px] shadow-lg shadow-[#FF3366]/20"
           >
-            Hapus Jasa
+            Konfirmasi
           </button>
         </div>
       </div>
@@ -47,7 +51,7 @@ defineProps({
   }
 })
 
-defineEmits(['confirm', 'cancel'])
+defineEmits(['confirm', 'close'])
 </script>
 
 <style scoped>

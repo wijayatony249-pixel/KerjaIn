@@ -1,6 +1,7 @@
 <template>
   <AppLayout title="Manajemen Layanan">
     <div class="relative z-10">
+      <BackButton href="/dashboard" label="Kembali ke Dashboard" />
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>
           <h1 class="text-4xl font-black uppercase tracking-tighter mb-2 text-white">Layanan Saya</h1>
@@ -57,7 +58,7 @@
       title="Hapus Layanan?"
       message="Data yang dihapus tidak dapat dikembalikan. Seluruh riwayat dan statistik layanan ini akan ikut terhapus dari sistem."
       @confirm="executeDelete"
-      @cancel="showDeleteModal = false"
+      @close="showDeleteModal = false"
     />
   </AppLayout>
 </template>
@@ -68,6 +69,7 @@ import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '../../Layouts/AppLayout.vue'
 import ServiceManageCard from '../../Components/ServiceManageCard.vue'
 import ConfirmModal from '../../Components/ConfirmModal.vue'
+import BackButton from '../../Components/BackButton.vue'
 
 const props = defineProps({
   services: Array

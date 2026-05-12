@@ -63,7 +63,7 @@
 
           <!-- Submit -->
           <div class="flex items-center justify-end gap-4 border-t border-white/5 pt-10">
-            <Link :href="'/dashboard'" class="text-white/40 hover:text-white font-bold transition-colors">Batal</Link>
+            <Link :href="'/profil'" class="text-white/40 hover:text-white font-bold transition-colors">Batal</Link>
             <button 
               type="submit"
               :disabled="form.processing"
@@ -81,7 +81,10 @@
 
 <script setup>
 import { ref } from 'vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, useForm, router } from '@inertiajs/vue3';
+import { useToast } from '../../composables/useToast';
+
+const { addToast } = useToast();
 
 const props = defineProps({
   user: Object
@@ -91,7 +94,6 @@ const previewUrl = ref(null);
 const fileInput = ref(null);
 
 const form = useForm({
-  _method: 'PATCH', // Spoofing PATCH for file upload
   name: props.user.name,
   bio: props.user.bio || '',
   avatar: null
@@ -106,12 +108,17 @@ const handleFileChange = (e) => {
 };
 
 const submit = () => {
-  // Use POST with _method spoofing for multipart/form-data
   form.post('/profil', {
     preserveScroll: true,
     forceFormData: true,
     onSuccess: () => {
-      // Success logic
+      addToast('Profil berhasil diperbarui!', 'success');
+      setTimeout(() => {
+        router.visit('/profil');
+      }, 500);
+    },
+    onError: () => {
+      addToast('Gagal memperbarui profil', 'error');
     }
   });
 };
