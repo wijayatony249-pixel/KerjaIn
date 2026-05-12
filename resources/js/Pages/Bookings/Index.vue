@@ -1,141 +1,189 @@
 <template>
-  <AppLayout title="Riwayat Pesanan">
-    <!-- Tabs -->
-    <div class="flex items-center gap-2 bg-white/5 p-1 rounded-lg mb-10 w-fit border border-white/5">
-      <button
-        v-for="tab in tabs"
-        :key="tab.value"
-        @click="activeTab = tab.value"
-        :class="[
-          'px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-md transition-all duration-300',
-          activeTab === tab.value
-            ? 'bg-[#FF3366] text-white shadow-lg shadow-[#FF3366]/20'
-            : 'text-white/40 hover:text-white'
-        ]"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
-
-    <!-- Booking List (Card Style) -->
-    <div class="grid grid-cols-1 gap-6">
-      <div 
-        v-for="booking in filteredBookings" 
-        :key="booking.id" 
-        class="bg-white/[0.03] border border-white/5 p-6 rounded-lg flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#FF3366]/30 transition-all group"
-      >
-        <div class="flex items-center gap-6 w-full md:w-auto">
-          <!-- Service Thumbnail/Icon -->
-          <div class="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center text-[#FF3366] group-hover:bg-[#FF3366] group-hover:text-white transition-all duration-500">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-          </div>
-
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-3 mb-1">
-              <span class="text-[10px] font-black text-white/20 uppercase tracking-widest">#ID-{{ booking.id }}</span>
-              <div :class="['w-2 h-2 rounded-full', statusPulse(booking.status)]"></div>
-            </div>
-            <h3 class="text-lg font-black uppercase tracking-tighter truncate">{{ booking.service?.title }}</h3>
-            <div class="flex items-center gap-2 mt-1">
-              <div class="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black">
-                {{ (user?.role === 'freelancer' ? booking.client?.name : booking.freelancer?.name)?.[0] }}
-              </div>
-              <span class="text-[10px] font-black text-white/40 uppercase tracking-widest">
-                {{ user?.role === 'freelancer' ? booking.client?.name : booking.freelancer?.name }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between md:justify-end gap-8 w-full md:w-auto border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
-          <div class="text-center md:text-right">
-            <div class="text-white/20 text-[8px] font-black uppercase tracking-widest mb-1">TANGGAL</div>
-            <div class="text-xs font-black text-white/80 uppercase">{{ formatDate(booking.booking_date) }}</div>
-          </div>
-
-          <div class="text-center md:text-right">
-            <div class="text-white/20 text-[8px] font-black uppercase tracking-widest mb-1">STATUS</div>
-            <span :class="['text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter border', statusClass(booking.status)]">
-              {{ booking.status }}
-            </span>
-          </div>
-
-          <div class="text-center md:text-right">
-            <div class="text-white/20 text-[8px] font-black uppercase tracking-widest mb-1">TOTAL</div>
-            <div class="text-lg font-black text-white">Rp{{ formatNumber(booking.service?.price) }}</div>
-          </div>
-
-          <Link :href="`/booking/${booking.id}`" class="px-8 py-3 bg-white text-black rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3366] hover:text-white transition-all shadow-lg">
-            Detail
-          </Link>
-        </div>
+  <AppLayout title="Daftar Pesanan">
+    <div class="relative z-10">
+      <!-- Tab Bar -->
+      <div class="flex gap-4 border-b border-white/5 mb-10 overflow-x-auto pb-4">
+        <button 
+          v-for="tab in tabs" 
+          :key="tab"
+          @click="activeTab = tab"
+          :class="[
+            'px-6 py-2 text-xs font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap rounded-md border',
+            activeTab === tab ? 'bg-[#FF3366] text-white border-[#FF3366] shadow-lg shadow-[#FF3366]/20' : 'text-white/40 hover:text-white border-transparent'
+          ]"
+        >
+          {{ tab }}
+        </button>
       </div>
 
-      <!-- Empty State -->
-      <div v-if="filteredBookings.length === 0" class="py-32 bg-white/[0.02] border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
-        <div class="text-6xl text-white/5 font-black mb-6 uppercase tracking-tighter animate-pulse">KERJA//IN</div>
-        <h3 class="text-2xl font-black uppercase tracking-tighter mb-2">Belum ada pesanan</h3>
-        <p class="text-white/20 text-[10px] font-black uppercase tracking-widest">Aktivitas pesanan Anda akan muncul di sini.</p>
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <StatCard label="Total Booking" :value="stats.total" accentColor="blue" />
+        <StatCard label="Menunggu" :value="stats.pending" accentColor="red" />
+        <StatCard label="Aktif" :value="stats.accepted" accentColor="black" />
+        <StatCard label="Tuntas" :value="stats.done" accentColor="gray" />
+      </div>
+
+      <!-- Table Container -->
+      <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 border-b border-white/5 bg-white/[0.02]">
+              <th class="p-6">No</th>
+              <th class="p-6">Layanan</th>
+              <th class="p-6">{{ isFreelancer ? 'Client' : 'Freelancer' }}</th>
+              <th class="p-6">Tanggal</th>
+              <th class="p-6">Status</th>
+              <th class="p-6 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            <tr v-for="(booking, index) in filteredBookings" :key="booking.id" class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+              <td class="p-6 text-white/20 font-black">{{ index + 1 }}</td>
+              <td class="p-6">
+                <div class="font-black text-white uppercase tracking-tight">{{ booking.service?.title }}</div>
+                <div class="text-[10px] text-white/40 font-bold uppercase tracking-widest">{{ booking.service?.category }}</div>
+              </td>
+              <td class="p-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-md bg-gradient-to-br from-[#FF3366] to-[#6C63FF] text-[10px] font-black flex items-center justify-center text-white">
+                    {{ (isFreelancer ? booking.client?.name : booking.freelancer?.name)?.[0] }}
+                  </div>
+                  <div class="font-bold text-white/80">{{ isFreelancer ? booking.client?.name : booking.freelancer?.name }}</div>
+                </div>
+              </td>
+              <td class="p-6 font-bold text-white/60">{{ formatDate(booking.booking_date) }}</td>
+              <td class="p-6">
+                <StatusBadge :status="booking.status" />
+              </td>
+              <td class="p-6 text-right">
+                <div class="flex justify-end gap-3">
+                  <Link :href="`/booking/${booking.id}`" class="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all">
+                    Detail
+                  </Link>
+                  
+                  <template v-if="isFreelancer && booking.status === 'pending'">
+                    <button @click="updateStatus(booking.id, 'accepted')" class="bg-[#1A56FF] text-white px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20">
+                      Terima
+                    </button>
+                    <button @click="updateStatus(booking.id, 'rejected')" class="bg-[#FF3366]/10 text-[#FF3366] px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3366] hover:text-white transition-all">
+                      Tolak
+                    </button>
+                  </template>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="filteredBookings.length === 0">
+              <td colspan="6" class="p-32 text-center text-white/20 font-black uppercase tracking-[0.4em] italic text-xs">
+                Belum ada riwayat pesanan di kategori ini
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="pagination.last_page > 1" class="flex justify-center gap-3 mt-12">
+        <button 
+          @click="fetchData(pagination.current_page - 1)" 
+          :disabled="pagination.current_page === 1"
+          class="bg-white/5 border border-white/10 rounded-lg px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-20 hover:bg-white/10 transition-all"
+        >
+          Prev
+        </button>
+        <button 
+          v-for="page in pagination.last_page" 
+          :key="page"
+          @click="fetchData(page)"
+          :class="[
+            'w-10 h-10 flex items-center justify-center rounded-lg text-[10px] font-black transition-all border',
+            pagination.current_page === page ? 'bg-[#FF3366] text-white border-[#FF3366] shadow-lg shadow-[#FF3366]/20' : 'bg-white/5 text-white/40 border-white/10 hover:border-white/30'
+          ]"
+        >
+          {{ page }}
+        </button>
+        <button 
+          @click="fetchData(pagination.current_page + 1)" 
+          :disabled="pagination.current_page === pagination.last_page"
+          class="bg-white/5 border border-white/10 rounded-lg px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-20 hover:bg-white/10 transition-all"
+        >
+          Next
+        </button>
       </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
-import AppLayout from '../../Layouts/AppLayout.vue';
-import { useAuth } from '../../composables/useAuth';
+import { ref, onMounted, computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
+import AppLayout from '../../Layouts/AppLayout.vue'
+import StatCard from '../../Components/StatCard.vue'
+import StatusBadge from '../../Components/StatusBadge.vue'
+import { useAuth } from '../../composables/useAuth'
+import { useApi } from '../../composables/useApi'
 
-const props = defineProps({
-  bookings: Array
-});
+const { isFreelancer } = useAuth()
+const { get, put } = useApi()
 
-const { user } = useAuth();
-const activeTab = ref('all');
+const activeTab = ref('Semua')
+const tabs = ['Semua', 'Pending', 'Diterima', 'Selesai', 'Ditolak']
 
-const tabs = [
-  { label: 'Semua', value: 'all' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Proses', value: 'accepted' },
-  { label: 'Selesai', value: 'done' },
-  { label: 'Batal', value: 'rejected' },
-];
+const bookings = ref([])
+const pagination = ref({ current_page: 1, last_page: 1 })
+const stats = ref({ total: 0, pending: 0, accepted: 0, done: 0 })
+
+const fetchData = async (page = 1) => {
+  try {
+    const res = await get(`/bookings?page=${page}`)
+    bookings.value = res.data.data
+    pagination.value = {
+        current_page: res.data.current_page,
+        last_page: res.data.last_page
+    }
+    updateStats()
+  } catch (error) {
+    console.error('Failed to fetch bookings', error)
+  }
+}
+
+const updateStats = () => {
+    stats.value = {
+        total: bookings.value.length,
+        pending: bookings.value.filter(b => b.status === 'pending').length,
+        accepted: bookings.value.filter(b => b.status === 'accepted').length,
+        done: bookings.value.filter(b => b.status === 'done').length
+    }
+}
 
 const filteredBookings = computed(() => {
-  if (activeTab.value === 'all') return props.bookings;
-  return props.bookings.filter(b => b.status === activeTab.value);
-});
+  if (activeTab.value === 'Semua') return bookings.value
+  const statusMap = {
+    'Pending': 'pending',
+    'Diterima': 'accepted',
+    'Selesai': 'done',
+    'Ditolak': 'rejected'
+  }
+  return bookings.value.filter(b => b.status === statusMap[activeTab.value])
+})
 
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toLocaleDateString('id-ID', {
-    day: '2-digit',
+const updateStatus = async (id, status) => {
+  if (!confirm(`Update status pesanan ini?`)) return
+  try {
+    await put(`/bookings/${id}`, { status })
+    fetchData(pagination.value.current_page)
+  } catch (error) {
+    alert('Gagal memperbarui status')
+  }
+}
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('id-ID', {
+    day: 'numeric',
     month: 'long',
     year: 'numeric'
-  });
-};
+  })
+}
 
-const formatNumber = (num) => {
-  return new Intl.NumberFormat('id-ID').format(num || 0);
-};
-
-const statusClass = (status) => {
-  switch (status) {
-    case 'pending': return 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20';
-    case 'accepted': return 'bg-[#FF3366]/10 text-[#FF3366] border-[#FF3366]/20';
-    case 'rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
-    case 'done': return 'bg-green-500/10 text-green-500 border-green-500/20';
-    default: return 'bg-white/10 text-white border-white/20';
-  }
-};
-
-const statusPulse = (status) => {
-  switch (status) {
-    case 'pending': return 'bg-yellow-400 animate-pulse';
-    case 'accepted': return 'bg-[#FF3366] animate-pulse';
-    case 'rejected': return 'bg-red-500';
-    case 'done': return 'bg-green-500';
-    default: return 'bg-white';
-  }
-};
+onMounted(fetchData)
 </script>

@@ -9,40 +9,42 @@ use Illuminate\Support\Facades\Storage;
 
 class PortfolioController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        return $request->user()->portfolios()->latest()->get();
+        return auth()->user()->portfolios()->latest()->get();
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'image' => 'required|image|max:5120',
+            'image' => 'required|image|max:3048',
+            'description' => 'nullable|string',
         ]);
 
-        $path = $request->file('image')->store('portfolios', 'public');
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('portfolios', 'public');
+            $validated['image'] = $path;
+        }
 
-        $portfolio = $request->user()->portfolios()->create([
-            'title' => $validated['title'],
-            'image_url' => Storage::url($path),
-        ]);
+        $validated['freelancer_id'] = auth()->id();
+        $portfolio = Portfolio::create($validated);
 
         return response()->json($portfolio, 201);
     }
 
     public function destroy(Portfolio $portfolio)
     {
-        if ($portfolio->user_id !== auth()->id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if ($portfolio->freelancer_id !== auth()->id()) {
+            abort(403);
         }
 
-        // Extract path from URL to delete file
-        $path = str_replace('/storage/', '', $portfolio->image_url);
-        Storage::disk('public')->delete($path);
+        if ($portfolio->image) {
+            Storage::disk('public')->delete($portfolio->image);
+        }
 
         $portfolio->delete();
 
-        return response()->json(['message' => 'Deleted']);
+        return response()->json(null, 204);
     }
 }

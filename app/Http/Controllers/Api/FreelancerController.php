@@ -8,46 +8,31 @@ use Illuminate\Http\Request;
 
 class FreelancerController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $freelancers = User::where('role', 'freelancer')
-            ->with(['services'])
-            ->withCount(['bookings as completed_projects' => function ($query) {
-                $query->where('status', 'done');
-            }])
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'bio' => $user->bio,
-                    'category' => $user->category,
-                    'rating' => 4.9, // Mock rating for now
-                    'completed_projects' => $user->completed_projects,
-                ];
-            });
+            ->withCount('services')
+            ->get();
+
+        foreach ($freelancers as $freelancer) {
+            $freelancer->avg_rating = $freelancer->reviews()->avg('rating') ?: 0;
+        }
 
         return response()->json($freelancers);
     }
 
-    public function show($id)
+    public function show(User $user)
     {
-        $freelancer = User::where('role', 'freelancer')
-            ->with(['services', 'portfolios'])
-            ->withCount(['bookings as completed_projects' => function ($query) {
-                $query->where('status', 'done');
-            }])
-            ->findOrFail($id);
+        if ($user->role !== 'freelancer') {
+            abort(404);
+        }
 
-        return response()->json([
-            'id' => $freelancer->id,
-            'name' => $freelancer->name,
-            'bio' => $freelancer->bio,
-            'category' => $freelancer->category,
-            'rating' => 4.9, // Mock rating for now
-            'completed_projects' => $freelancer->completed_projects,
-            'services' => $freelancer->services,
-            'portfolios' => $freelancer->portfolios,
-        ]);
+        $user->load(['services' => function($query) {
+            $query->where('is_active', true);
+        }, 'portfolios', 'reviews.client']);
+
+        $user->avg_rating = $user->reviews()->avg('rating') ?: 0;
+
+        return response()->json($user);
     }
 }

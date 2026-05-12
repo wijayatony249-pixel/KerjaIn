@@ -1,35 +1,44 @@
 <?php
-use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\BookingController;
-use App\Http\Controllers\Api\MessageController;
-use App\Http\Controllers\Api\ReviewController;
-use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\FreelancerController;
+use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\PortfolioController;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\ServiceController;
+use Illuminate\Support\Facades\Route;
 
-// Public
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+// Public (outside middleware)
+Route::get('/services', [ServiceController::class, 'index']);
+Route::get('/services/{service}', [ServiceController::class, 'show']);
 
-Route::get('/services',      [ServiceController::class, 'index']);
-Route::get('/services/{id}', [ServiceController::class, 'show']);
-Route::get('/freelancers',      [FreelancerController::class, 'index']);
-Route::get('/freelancers/{id}', [FreelancerController::class, 'show']);
+// Protected routes
+Route::middleware('auth')->group(function () {
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::post('/profile', [ProfileController::class, 'update']);
 
-// Protected
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/me',      [AuthController::class, 'me']);
-    Route::put('/me',      [ProfileController::class, 'update']);
-    Route::post('/me/avatar', [ProfileController::class, 'updateAvatar']);
+    // My services
+    Route::apiResource('services', ServiceController::class);
 
-    Route::apiResource('services',  ServiceController::class)->except(['index', 'show']);
-    Route::apiResource('bookings',  BookingController::class);
-    Route::apiResource('reviews',   ReviewController::class);
-    Route::apiResource('portfolios', PortfolioController::class);
+    // Portfolios
+    Route::get('/portfolios', [PortfolioController::class, 'index']);
+    Route::post('/portfolios', [PortfolioController::class, 'store']);
+    Route::delete('/portfolios/{portfolio}', [PortfolioController::class, 'destroy']);
 
-    Route::get('/messages/{booking}',  [MessageController::class, 'index']);
-    Route::post('/messages',           [MessageController::class, 'store']);
+    // Bookings
+    Route::apiResource('bookings', BookingController::class);
+
+    // Reviews
+    Route::apiResource('reviews', ReviewController::class);
+
+    // Messages
+    Route::get('/messages/{booking}', [MessageController::class, 'index']);
+    Route::post('/messages', [MessageController::class, 'store']);
+
+    // Freelancers
+    Route::get('/freelancers', [FreelancerController::class, 'index']);
+    Route::get('/freelancers/{user}', [FreelancerController::class, 'show']);
 });

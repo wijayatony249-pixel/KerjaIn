@@ -1,92 +1,100 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ServiceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Service::with('freelancer:id,name,avatar')->where('is_active', 1);
+        $query = Service::query();
 
-        if ($request->search) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+        if ($request->has('my')) {
+            $query->where('freelancer_id', auth()->id());
+        } else {
+            $query->where('is_active', true)->with('freelancer:id,name,avatar');
         }
 
-        if ($request->category) {
-            $query->where('category', $request->category);
+        if ($request->has('all')) {
+            return response()->json(['data' => $query->latest()->get()]);
         }
 
-        return response()->json($query->latest()->paginate(12));
+        return $query->latest()->paginate(12);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'title'       => 'required|string|max:200',
-            'description' => 'required|string',
-            'category'    => 'required|string|max:100',
-            'price'       => 'required|numeric|min:0',
-            'thumbnail'   => 'nullable|image|max:5120',
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'thumbnail' => 'nullable|image|max:2048',
         ]);
-
-        $data = $request->only('title', 'description', 'category', 'price');
-        $data['freelancer_id'] = auth()->id();
-        $data['is_active'] = 1;
 
         if ($request->hasFile('thumbnail')) {
             $path = $request->file('thumbnail')->store('services', 'public');
-            $data['thumbnail'] = \Illuminate\Support\Facades\Storage::url($path);
+            $validated['thumbnail'] = $path;
         }
 
-        $service = Service::create($data);
+        $validated['freelancer_id'] = auth()->id();
+        $service = Service::create($validated);
 
         return response()->json($service, 201);
     }
 
-    public function show($id)
+    public function show(Service $service)
     {
-        return response()->json(Service::with('freelancer:id,name,avatar,bio')->findOrFail($id));
+        $service->load(['freelancer.portfolios', 'reviews.client']);
+        $service->avg_rating = $service->reviews()->avg('rating');
+        
+        return response()->json($service);
     }
 
     public function update(Request $request, Service $service)
     {
         if ($service->freelancer_id !== auth()->id()) {
-            return response()->json(['message' => 'Forbidden'], 403);
+            abort(403);
         }
 
-        $request->validate([
-            'title'       => 'required|string|max:200',
-            'description' => 'required|string',
-            'category'    => 'required|string|max:100',
-            'price'       => 'required|numeric|min:0',
-            'thumbnail'   => 'nullable|image|max:5120',
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'thumbnail' => 'nullable|image|max:2048',
+            'is_active' => 'nullable|boolean',
         ]);
-
-        $data = $request->only('title', 'description', 'category', 'price', 'is_active');
 
         if ($request->hasFile('thumbnail')) {
             if ($service->thumbnail) {
-                $oldPath = str_replace('/storage/', '', $service->thumbnail);
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                Storage::disk('public')->delete($service->thumbnail);
             }
             $path = $request->file('thumbnail')->store('services', 'public');
-            $data['thumbnail'] = \Illuminate\Support\Facades\Storage::url($path);
+            $validated['thumbnail'] = $path;
         }
 
-        $service->update($data);
+        $service->update($validated);
+
         return response()->json($service);
     }
 
     public function destroy(Service $service)
     {
         if ($service->freelancer_id !== auth()->id()) {
-            return response()->json(['message' => 'Forbidden'], 403);
+            abort(403);
+        }
+
+        if ($service->thumbnail) {
+            Storage::disk('public')->delete($service->thumbnail);
         }
 
         $service->delete();
-        return response()->json(['message' => 'Deleted']);
+
+        return response()->json(null, 204);
     }
 }

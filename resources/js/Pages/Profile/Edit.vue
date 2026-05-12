@@ -3,7 +3,7 @@
     <div class="max-w-3xl mx-auto px-8">
       
       <div class="mb-10">
-        <Link :href="route('dashboard')" class="text-white/40 hover:text-white text-sm mb-4 inline-flex items-center gap-2 transition-colors">
+        <Link :href="'/dashboard'" class="text-white/40 hover:text-white text-sm mb-4 inline-flex items-center gap-2 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
           Kembali ke Dashboard
         </Link>
@@ -63,7 +63,7 @@
 
           <!-- Submit -->
           <div class="flex items-center justify-end gap-4 border-t border-white/5 pt-10">
-            <Link :href="route('dashboard')" class="text-white/40 hover:text-white font-bold transition-colors">Batal</Link>
+            <Link :href="'/dashboard'" class="text-white/40 hover:text-white font-bold transition-colors">Batal</Link>
             <button 
               type="submit"
               :disabled="form.processing"
@@ -107,7 +107,7 @@ const handleFileChange = (e) => {
 
 const submit = () => {
   // Use POST with _method spoofing for multipart/form-data
-  form.post(route('profile.update'), {
+  form.post('/profil', {
     preserveScroll: true,
     forceFormData: true,
     onSuccess: () => {

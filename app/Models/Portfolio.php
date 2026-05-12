@@ -6,10 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Portfolio extends Model
 {
-    protected $fillable = ['user_id', 'title', 'description', 'image', 'link'];
+    protected $fillable = ['freelancer_id', 'title', 'image', 'description'];
 
-    public function user()
+    public function freelancer()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'freelancer_id');
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return asset('storage/' . $this->image);
     }
 }

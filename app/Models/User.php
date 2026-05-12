@@ -11,37 +11,16 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'role',
-        'avatar',
-        'bio',
-        'skills',
-        'balance',
+        'name', 'email', 'password', 'role', 'avatar', 'bio', 'phone', 
+        'latitude', 'longitude', 'fcm_token'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -50,12 +29,13 @@ class User extends Authenticatable
         ];
     }
 
+    // Relationships
     public function services()
     {
         return $this->hasMany(Service::class, 'freelancer_id');
     }
 
-    public function bookings()
+    public function clientBookings()
     {
         return $this->hasMany(Booking::class, 'client_id');
     }
@@ -67,11 +47,28 @@ class User extends Authenticatable
 
     public function portfolios()
     {
-        return $this->hasMany(Portfolio::class);
+        return $this->hasMany(Portfolio::class, 'freelancer_id');
     }
 
     public function reviews()
     {
-        return $this->hasManyThrough(Review::class, Booking::class, 'freelancer_id', 'booking_id');
+        return $this->hasMany(Review::class, 'freelancer_id');
+    }
+
+    // Accessors
+    public function getAvatarUrlAttribute()
+    {
+        return $this->avatar ? asset('storage/' . $this->avatar) : null;
+    }
+
+    // Scopes
+    public function scopeFreelancers($query)
+    {
+        return $query->where('role', 'freelancer');
+    }
+
+    public function scopeClients($query)
+    {
+        return $query->where('role', 'client');
     }
 }

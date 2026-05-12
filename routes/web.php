@@ -1,73 +1,43 @@
 <?php
 
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Web\AuthController as WebAuthController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-// Public routes
-Route::get('/test-vue', fn() => Inertia::render('Test'));
+// Public
 Route::get('/', fn() => Inertia::render('Landing'))->name('home');
+Route::get('/login', fn() => Inertia::render('Auth/Login'))->name('login');
+Route::get('/register', fn() => Inertia::render('Auth/Register'))->name('register');
+Route::post('/register', [WebAuthController::class, 'register'])->name('register.post');
 
-// Public service routes
-Route::get('/layanan', function () {
-    return Inertia::render('Services/Index', [
-        'services' => \App\Models\Service::with('freelancer')->where('is_active', 1)->latest()->paginate(12),
-        'filters' => request()->all(['search', 'category'])
-    ]);
-});
+Route::post('/login', [WebAuthController::class, 'login'])->name('login.post');
+Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
-Route::get('/layanan/{id}', function ($id) {
-    return Inertia::render('Services/Show', [
-        'service' => \App\Models\Service::with(['freelancer', 'bookings.review'])->findOrFail($id)
-    ]);
-});
-
-// Auth routes
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
-});
-
-// Protected routes
+// Authenticated
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
+    
     // Services
-    Route::get('/layanan/buat', fn() => Inertia::render('Services/Form'));
-    Route::get('/layanan/{id}/edit', function ($id) {
-        return Inertia::render('Services/Form', [
-            'service' => \App\Models\Service::findOrFail($id)
-        ]);
-    });
-
+    Route::get('/layanan', [ServiceController::class, 'index'])->name('services.index');
+    Route::get('/layanan/kelola', [ServiceController::class, 'manage'])->name('services.manage');
+    Route::get('/layanan/buat', [ServiceController::class, 'create'])->name('services.create');
+    Route::post('/layanan', [ServiceController::class, 'store'])->name('services.store');
+    Route::get('/layanan/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+    Route::post('/layanan/{service}', [ServiceController::class, 'update'])->name('services.update'); // Using POST for multipart update
+    Route::get('/layanan/{service}', [ServiceController::class, 'show'])->name('services.show');
+    Route::delete('/layanan/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+    
     // Bookings
-    Route::get('/booking', function () {
-        $user = auth()->user();
-        $bookings = \App\Models\Booking::with(['service', 'client', 'freelancer'])
-            ->where('client_id', $user->id)
-            ->orWhere('freelancer_id', $user->id)
-            ->latest()
-            ->get();
-        return Inertia::render('Bookings/Index', ['bookings' => $bookings]);
-    })->name('booking.index');
-
-    Route::get('/booking/{id}', function ($id) {
-        $booking = \App\Models\Booking::with(['service', 'client', 'freelancer', 'review'])->findOrFail($id);
-        return Inertia::render('Bookings/Show', [
-            'booking' => $booking,
-            'initialMessages' => $booking->messages()->with('sender')->get()
-        ]);
-    });
-
-    // Profil
-    Route::get('/profil', fn() => Inertia::render('Profile/Index'))->name('profile.index');
-
-    // Pesan & Ulasan (Placeholder for now)
-    Route::get('/pesan', fn() => Inertia::render('Dashboard'))->name('messages.index');
-    Route::get('/ulasan', fn() => Inertia::render('Dashboard'))->name('reviews.index');
+    Route::get('/booking', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/booking/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+    
+    // Profile
+    Route::get('/profil', [ProfileController::class, 'edit'])->name('profile');
+    Route::post('/profil', [ProfileController::class, 'update'])->name('profile.update');
+    
+    // Portfolio
+    Route::get('/portfolio', fn() => Inertia::render('Portfolio/Index'))->name('portfolio');
 });

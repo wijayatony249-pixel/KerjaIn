@@ -8,44 +8,46 @@ use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
-    public function update(Request $request)
+    public function show()
     {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'bio' => 'nullable|string|max:1000',
-            'skills' => 'nullable|string|max:255',
-        ]);
-
-        $user->update($validated);
-
-        return response()->json([
-            'message' => 'Profile updated successfully',
-            'user' => $user
-        ]);
+        $user = auth()->user();
+        
+        if ($user->role === 'freelancer') {
+            $user->loadCount(['services', 'freelancerBookings']);
+            $user->avg_rating = $user->reviews()->avg('rating') ?: 0;
+        } else {
+            $user->loadCount(['clientBookings']);
+        }
+        
+        $user->load('portfolios');
+        
+        return response()->json($user);
     }
 
-    public function updateAvatar(Request $request)
+    public function update(Request $request)
     {
-        $request->validate([
-            'avatar' => 'required|image|max:2048',
-        ]);
+        $user = auth()->user();
 
-        $user = $request->user();
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'bio' => 'nullable|string',
+            'avatar' => 'nullable|image|max:2048',
+        ]);
 
         if ($request->hasFile('avatar')) {
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
             }
             $path = $request->file('avatar')->store('avatars', 'public');
-            $user->update(['avatar' => $path]);
+            $user->avatar = $path;
         }
 
-        return response()->json([
-            'message' => 'Avatar updated successfully',
-            'avatar_url' => asset('storage/' . $user->avatar)
-        ]);
+        $user->name = $request->name;
+        $user->phone = $request->phone;
+        $user->bio = $request->bio;
+        $user->save();
+
+        return response()->json($user);
     }
 }
