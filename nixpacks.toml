@@ -2,7 +2,7 @@
   cmds = ["composer install --no-dev", "npm install", "npm run build"]
 
 [variables]
-  PHP_EXTENSION_INSTALL = "gd, bcmath, pdo_mysql"
+  NIXPACKS_PHP_EXTENSIONS = "gd, bcmath, pdo_mysql, mbstring, xml, curl"
 
 [start]
   cmd = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT"
