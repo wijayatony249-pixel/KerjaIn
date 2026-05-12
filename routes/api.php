@@ -15,7 +15,7 @@ Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{service}', [ServiceController::class, 'show']);
 
 // Protected routes
-Route::middleware('auth')->group(function () {
+Route::middleware('auth')->as('api.')->group(function () {
     // Profile
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::post('/profile', [ProfileController::class, 'update']);
