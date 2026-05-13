@@ -209,6 +209,10 @@ import StatusBadge from '../../Components/StatusBadge.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'
 
+const props = defineProps({
+  booking: Object
+})
+
 const { user, isFreelancer } = useAuth()
 const { get, post, put } = useApi()
 
@@ -235,8 +239,11 @@ const fetchBooking = async () => {
     // Listen for realtime messages
     window.Echo.private(`bookings.${booking.value.id}`)
       .listen('.message.sent', (e) => {
-        messages.value.push(e.message)
-        scrollToBottom()
+        // Prevent duplicate messages if sender
+        if (e.message.sender_id !== user.id) {
+            messages.value.push(e.message)
+            scrollToBottom()
+        }
       })
   } catch (error) {
     console.error('Failed to fetch booking', error)
@@ -352,14 +359,6 @@ const formatDateShort = (dateString) => {
 
 onMounted(() => {
   fetchBooking()
-
-  if (props.booking.id) {
-    window.Echo.private(`bookings.${props.booking.id}`)
-      .listen('.message.sent', (e) => {
-        booking.value.messages.push(e.message)
-        scrollToBottom()
-      })
-  }
 
   // Load Midtrans Snap Script
   const snapScript = 'https://app.sandbox.midtrans.com/snap/snap.js'
