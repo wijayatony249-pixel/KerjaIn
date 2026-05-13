@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Api;
 
+use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Message;
@@ -30,6 +31,10 @@ class MessageController extends Controller
             'message'    => $request->message,
         ]);
 
-        return response()->json($message->load('sender:id,name,avatar'), 201);
+        $message->load('sender:id,name,avatar');
+
+        broadcast(new MessageSent($message))->toOthers();
+
+        return response()->json($message, 201);
     }
 }

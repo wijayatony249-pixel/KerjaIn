@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 // Public (outside middleware)
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{service}', [ServiceController::class, 'show']);
+Route::post('/payment/callback', [\App\Http\Controllers\Api\PaymentController::class, 'callback']);
 
 // Protected routes
 Route::middleware('auth')->as('api.')->group(function () {

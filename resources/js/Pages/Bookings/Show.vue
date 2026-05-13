@@ -30,8 +30,10 @@
               <div class="font-black text-xl text-white uppercase tracking-tight">Rp {{ formatPrice(booking.service?.price) }}</div>
             </div>
             <div>
-              <div class="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">Catatan</div>
-              <div class="font-medium text-sm text-white/60">{{ booking.note || '-' }}</div>
+              <div class="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">Status Pembayaran</div>
+              <div :class="['font-black text-sm uppercase tracking-widest px-3 py-1 rounded-full inline-block', booking.payment_status === 'paid' ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500']">
+                {{ booking.payment_status === 'paid' ? 'Lunas' : 'Belum Bayar' }}
+              </div>
             </div>
           </div>
 
@@ -154,6 +156,14 @@
             </button>
           </template>
 
+          <template v-if="!isFreelancer && booking.payment_status === 'unpaid'">
+            <div class="font-black text-2xl uppercase tracking-tighter mb-2">Selesaikan Pembayaran</div>
+            <p class="text-white/80 text-[10px] mb-8 font-bold uppercase tracking-widest">Silakan bayar agar proyek bisa segera diproses oleh freelancer.</p>
+            <button @click="payNow" class="w-full bg-white text-black font-black py-5 rounded-lg hover:bg-white/90 transition-all uppercase tracking-widest text-sm shadow-xl">
+              Bayar Sekarang
+            </button>
+          </template>
+
           <template v-if="!isFreelancer && booking.status === 'done' && !booking.review">
             <div class="font-black text-2xl uppercase tracking-tighter mb-8 text-center">Beri Ulasan</div>
             <div class="space-y-6">
@@ -221,21 +231,15 @@ const fetchBooking = async () => {
     booking.value = res.data
     messages.value = res.data.messages || []
     scrollToBottom()
+    
+    // Listen for realtime messages
+    window.Echo.private(`bookings.${booking.value.id}`)
+      .listen('.message.sent', (e) => {
+        messages.value.push(e.message)
+        scrollToBottom()
+      })
   } catch (error) {
     console.error('Failed to fetch booking', error)
-  }
-}
-
-const fetchMessages = async () => {
-  if (!booking.value) return
-  try {
-    const res = await get(`/messages/${booking.value.id}`)
-    if (res.data.length > messages.value.length) {
-        messages.value = res.data
-        scrollToBottom()
-    }
-  } catch (error) {
-    console.error('Failed to poll messages', error)
   }
 }
 
@@ -245,11 +249,12 @@ const sendMessage = async () => {
   newMessage.value = ''
   
   try {
-    await post('/messages', {
+    const res = await post('/messages', {
       booking_id: booking.value.id,
       message: text
     })
-    fetchMessages()
+    messages.value.push(res.data)
+    scrollToBottom()
   } catch (error) {
     alert('Gagal mengirim pesan')
   }
@@ -277,6 +282,30 @@ const submitReview = async () => {
   }
 }
 
+const payNow = () => {
+  if (!booking.value.snap_token) {
+    alert('Token pembayaran belum siap. Silakan refresh halaman.')
+    return
+  }
+
+  window.snap.pay(booking.value.snap_token, {
+    onSuccess: function(result) {
+      alert("Pembayaran Berhasil!")
+      fetchBooking()
+    },
+    onPending: function(result) {
+      alert("Menunggu Pembayaran...")
+      fetchBooking()
+    },
+    onError: function(result) {
+      alert("Pembayaran Gagal!")
+    },
+    onClose: function() {
+      alert('Kamu menutup popup tanpa menyelesaikan pembayaran.')
+    }
+  })
+}
+
 const timelineSteps = computed(() => {
   if (!booking.value) return []
   return [
@@ -289,9 +318,9 @@ const timelineSteps = computed(() => {
 const canAction = computed(() => {
   if (!booking.value) return false
   if (isFreelancer.value) {
-    return ['pending', 'accepted'].includes(booking.value.status)
+    return ['pending', 'accepted'].includes(booking.value.status) && booking.value.payment_status === 'paid'
   } else {
-    return booking.value.status === 'done' && !booking.review
+    return (booking.value.payment_status === 'unpaid') || (booking.value.status === 'done' && !booking.review)
   }
 })
 
@@ -323,10 +352,20 @@ const formatDateShort = (dateString) => {
 
 onMounted(() => {
   fetchBooking()
-  pollInterval.value = setInterval(fetchMessages, 5000)
+
+  // Load Midtrans Snap Script
+  const snapScript = 'https://app.sandbox.midtrans.com/snap/snap.js'
+  const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY
+  const script = document.createElement('script')
+  script.src = snapScript
+  script.setAttribute('data-client-key', clientKey)
+  script.async = true
+  document.head.appendChild(script)
 })
 
 onUnmounted(() => {
-  if (pollInterval.value) clearInterval(pollInterval.value)
+  if (booking.value) {
+    window.Echo.leave(`bookings.${booking.value.id}`)
+  }
 })
 </script>

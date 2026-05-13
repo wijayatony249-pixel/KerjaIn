@@ -4,10 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Service;
 use Illuminate\Http\Request;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class BookingController extends Controller
 {
+    public function __construct()
+    {
+        Config::$serverKey = env('MIDTRANS_SERVER_KEY');
+        Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        Config::$isSanitized = env('MIDTRANS_IS_SANITIZED', true);
+        Config::$is3ds = env('MIDTRANS_IS_3DS', true);
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -37,10 +48,45 @@ class BookingController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        $validated['client_id'] = auth()->id();
-        $validated['status'] = 'pending';
+        $service = Service::findOrFail($validated['service_id']);
+        $user = auth()->user();
 
-        $booking = Booking::create($validated);
+        $booking = Booking::create([
+            'service_id' => $validated['service_id'],
+            'freelancer_id' => $validated['freelancer_id'],
+            'client_id' => $user->id,
+            'booking_date' => $validated['booking_date'],
+            'note' => $validated['note'],
+            'status' => 'pending',
+            'payment_status' => 'unpaid',
+        ]);
+
+        // Midtrans Payload
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'BOOK-' . $booking->id . '-' . time(),
+                'gross_amount' => (int) $service->price,
+            ],
+            'customer_details' => [
+                'first_name' => $user->name,
+                'email' => $user->email,
+            ],
+            'item_details' => [
+                [
+                    'id' => $service->id,
+                    'price' => (int) $service->price,
+                    'quantity' => 1,
+                    'name' => $service->title,
+                ]
+            ]
+        ];
+
+        try {
+            $snapToken = Snap::getSnapToken($params);
+            $booking->update(['snap_token' => $snapToken]);
+        } catch (\Exception $e) {
+            // Log or handle error
+        }
 
         return response()->json($booking, 201);
     }
