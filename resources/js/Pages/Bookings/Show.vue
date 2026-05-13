@@ -236,18 +236,27 @@ const fetchBooking = async () => {
     messages.value = res.data.messages || []
     scrollToBottom()
     
-    // Listen for realtime messages
-    window.Echo.private(`bookings.${booking.value.id}`)
-      .listen('.message.sent', (e) => {
-        // Prevent duplicate messages if sender
-        if (e.message.sender_id !== user.id) {
-            messages.value.push(e.message)
-            scrollToBottom()
-        }
-      })
+    // Subscribe to realtime messages
+    subscribeToEcho()
   } catch (error) {
     console.error('Failed to fetch booking', error)
   }
+}
+
+const isSubscribed = ref(false)
+const subscribeToEcho = () => {
+  if (isSubscribed.value || !booking.value) return
+  
+  window.Echo.private(`bookings.${booking.value.id}`)
+    .listen('.message.sent', (e) => {
+      // Prevent duplicate messages if sender (compare as numbers)
+      if (Number(e.message.sender_id) !== Number(user.value?.id)) {
+          messages.value.push(e.message)
+          scrollToBottom()
+      }
+    })
+  
+  isSubscribed.value = true
 }
 
 const sendMessage = async () => {
