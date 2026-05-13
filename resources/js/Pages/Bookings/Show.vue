@@ -353,6 +353,14 @@ const formatDateShort = (dateString) => {
 onMounted(() => {
   fetchBooking()
 
+  if (props.booking.id) {
+    window.Echo.private(`bookings.${props.booking.id}`)
+      .listen('.message.sent', (e) => {
+        booking.value.messages.push(e.message)
+        scrollToBottom()
+      })
+  }
+
   // Load Midtrans Snap Script
   const snapScript = 'https://app.sandbox.midtrans.com/snap/snap.js'
   const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY
