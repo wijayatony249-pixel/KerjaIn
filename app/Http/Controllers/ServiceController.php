@@ -137,7 +137,7 @@ class ServiceController extends Controller
 
         if ($request->hasFile('thumbnail')) {
             $path = $request->file('thumbnail')->store('services', 'public');
-            $validated['thumbnail'] = '/storage/' . $path;
+            $validated['thumbnail'] = $path;
         }
 
         $service->update($validated);

@@ -26,7 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/layanan/buat', [ServiceController::class, 'create'])->name('services.create');
     Route::post('/layanan', [ServiceController::class, 'store'])->name('services.store');
     Route::get('/layanan/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
-    Route::post('/layanan/{service}', [ServiceController::class, 'update'])->name('services.update'); // Using POST for multipart update
+    Route::put('/layanan/{service}', [ServiceController::class, 'update'])->name('services.update'); // Using PUT (spoofed via POST) for multipart update
     Route::get('/layanan/{service}', [ServiceController::class, 'show'])->name('services.show');
     Route::delete('/layanan/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
     
