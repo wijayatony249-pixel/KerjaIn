@@ -138,6 +138,24 @@ watch(flashSuccess, (msg) => {
 watch(flashError, (msg) => {
     if (msg) addToast(msg, 'error')
 }, { immediate: true })
+
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  if (user.value?.id) {
+    window.Echo.private(`App.Models.User.${user.value.id}`)
+      .listen('.message.sent', (e) => {
+        // Jangan munculkan toast jika sedang membuka halaman chat booking tersebut
+        const isCurrentBooking = window.location.pathname.includes(`/booking/${e.message.booking_id}`)
+        if (!isCurrentBooking && e.message.sender_id !== user.value.id) {
+            addToast(`Pesan baru dari ${e.message.sender.name}`, 'success')
+        }
+      })
+      .listen('.booking.created', (e) => {
+          addToast(`Pesanan baru! ${e.booking.client.name} memesan ${e.booking.service.title}`, 'success')
+      })
+  }
+})
 </script>
 
 <style>

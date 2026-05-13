@@ -88,6 +88,8 @@ class BookingController extends Controller
             // Log or handle error
         }
 
+        broadcast(new \App\Events\BookingCreated($booking))->toOthers();
+
         return response()->json($booking, 201);
     }
 

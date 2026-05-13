@@ -32,8 +32,16 @@ class MessageSent implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
+        $this->message->loadMissing('booking');
+        $booking = $this->message->booking;
+        
+        $recipientId = $this->message->sender_id === $booking->client_id 
+            ? $booking->freelancer_id 
+            : $booking->client_id;
+
         return [
             new PrivateChannel('bookings.' . $this->message->booking_id),
+            new PrivateChannel('App.Models.User.' . $recipientId),
         ];
     }
 
