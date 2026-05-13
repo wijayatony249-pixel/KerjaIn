@@ -8,10 +8,12 @@ import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
 
 window.Pusher = Pusher
+// Aktifkan log Pusher di console browser untuk mempermudah debbuging jika masih gagal
+window.Pusher.logToConsole = true;
 
 window.Echo = new Echo({
     broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY,
-    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+    key: import.meta.env.VITE_PUSHER_APP_KEY || '8cb3d006062fec6ef88a',
+    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'ap1',
     forceTLS: true
 })
