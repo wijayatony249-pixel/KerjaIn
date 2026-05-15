@@ -208,6 +208,7 @@ import AppLayout from '../../Layouts/AppLayout.vue'
 import StatusBadge from '../../Components/StatusBadge.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'
+import { useToast } from '../../composables/useToast'
 
 const props = defineProps({
   booking: Object
@@ -215,6 +216,7 @@ const props = defineProps({
 
 const { user, isFreelancer } = useAuth()
 const { get, post, put } = useApi()
+const { addToast } = useToast()
 
 const booking = ref(null)
 const messages = ref([])
@@ -300,24 +302,24 @@ const submitReview = async () => {
 
 const payNow = () => {
   if (!booking.value.snap_token) {
-    alert('Token pembayaran belum siap. Silakan refresh halaman.')
+    addToast('Token pembayaran belum siap. Silakan refresh halaman.', 'error')
     return
   }
 
   window.snap.pay(booking.value.snap_token, {
     onSuccess: function(result) {
-      alert("Pembayaran Berhasil!")
+      addToast("Pembayaran Berhasil!", 'success')
       fetchBooking()
     },
     onPending: function(result) {
-      alert("Menunggu Pembayaran...")
+      addToast("Menunggu Pembayaran diproses...", 'warning')
       fetchBooking()
     },
     onError: function(result) {
-      alert("Pembayaran Gagal!")
+      addToast("Pembayaran Gagal!", 'error')
     },
     onClose: function() {
-      alert('Kamu menutup popup tanpa menyelesaikan pembayaran.')
+      addToast('Kamu menutup popup tanpa menyelesaikan pembayaran.', 'warning')
     }
   })
 }
