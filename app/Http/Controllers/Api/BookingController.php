@@ -85,7 +85,9 @@ class BookingController extends Controller
             $snapToken = Snap::getSnapToken($params);
             $booking->update(['snap_token' => $snapToken]);
         } catch (\Exception $e) {
-            // Log or handle error
+            \Log::error('Midtrans Error: ' . $e->getMessage());
+            // Opsional: kita juga bisa mengembalikan error ke frontend agar tidak perlu repot cek log
+            return response()->json(['message' => 'Gagal membuat token pembayaran: ' . $e->getMessage()], 500);
         }
 
         broadcast(new \App\Events\BookingCreated($booking))->toOthers();
