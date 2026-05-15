@@ -205,7 +205,7 @@ const submitOrder = async () => {
         showOrderModal.value = false
         router.visit('/booking')
     } catch (error) {
-        alert('Gagal melakukan pemesanan')
+        alert(error.response?.data?.message || 'Gagal melakukan pemesanan')
     } finally {
         loading.value = false
     }
