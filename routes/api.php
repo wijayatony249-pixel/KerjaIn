@@ -31,6 +31,7 @@ Route::middleware('auth')->as('api.')->group(function () {
 
     // Bookings
     Route::apiResource('bookings', BookingController::class);
+    Route::post('/bookings/{booking}/verify-payment', [BookingController::class, 'verifyPayment']);
 
     // Reviews
     Route::apiResource('reviews', ReviewController::class);

@@ -333,8 +333,14 @@ const payNow = () => {
   }
 
   window.snap.pay(booking.value.snap_token, {
-    onSuccess: function(result) {
-      addToast("Pembayaran Berhasil!", 'success')
+    onSuccess: async function(result) {
+      addToast("Memverifikasi pembayaran...", 'info')
+      try {
+        await post(`/bookings/${booking.value.id}/verify-payment`, { order_id: result.order_id })
+        addToast("Pembayaran Berhasil!", 'success')
+      } catch (e) {
+        // even if verification fails, let's refresh to get latest state
+      }
       fetchBooking()
     },
     onPending: function(result) {
