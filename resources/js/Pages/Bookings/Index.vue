@@ -64,10 +64,10 @@
                   </Link>
                   
                   <template v-if="isFreelancer && booking.status === 'pending'">
-                    <button @click="updateStatus(booking.id, 'accepted')" class="bg-[#1A56FF] text-white px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20">
+                    <button @click="confirmStatusUpdate(booking.id, 'accepted')" class="bg-[#1A56FF] text-white px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20">
                       Terima
                     </button>
-                    <button @click="updateStatus(booking.id, 'rejected')" class="bg-[#FF3366]/10 text-[#FF3366] px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3366] hover:text-white transition-all">
+                    <button @click="confirmStatusUpdate(booking.id, 'rejected')" class="bg-[#FF3366]/10 text-[#FF3366] px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3366] hover:text-white transition-all">
                       Tolak
                     </button>
                   </template>
@@ -112,6 +112,15 @@
         </button>
       </div>
     </div>
+
+    <!-- Confirm Modal -->
+    <ConfirmModal 
+      :show="showConfirm" 
+      :title="confirmData.title" 
+      :message="confirmData.message" 
+      @confirm="executeStatusUpdate" 
+      @close="showConfirm = false" 
+    />
   </AppLayout>
 </template>
 
@@ -122,11 +131,14 @@ import AppLayout from '../../Layouts/AppLayout.vue'
 import StatCard from '../../Components/StatCard.vue'
 import StatusBadge from '../../Components/StatusBadge.vue'
 import BackButton from '../../Components/BackButton.vue'
+import ConfirmModal from '../../Components/ConfirmModal.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'
+import { useToast } from '../../composables/useToast'
 
 const { isFreelancer } = useAuth()
 const { get, put } = useApi()
+const { addToast } = useToast()
 
 const activeTab = ref('Semua')
 const tabs = ['Semua', 'Pending', 'Diterima', 'Selesai', 'Ditolak']
@@ -134,6 +146,9 @@ const tabs = ['Semua', 'Pending', 'Diterima', 'Selesai', 'Ditolak']
 const bookings = ref([])
 const pagination = ref({ current_page: 1, last_page: 1 })
 const stats = ref({ total: 0, pending: 0, accepted: 0, done: 0 })
+
+const showConfirm = ref(false)
+const confirmData = ref({ id: null, status: null, title: '', message: '' })
 
 const fetchData = async (page = 1) => {
   try {
@@ -169,13 +184,26 @@ const filteredBookings = computed(() => {
   return bookings.value.filter(b => b.status === statusMap[activeTab.value])
 })
 
-const updateStatus = async (id, status) => {
-  if (!confirm(`Update status pesanan ini?`)) return
+const confirmStatusUpdate = (id, status) => {
+  confirmData.value = {
+    id,
+    status,
+    title: status === 'accepted' ? 'Terima Pesanan?' : 'Tolak Pesanan?',
+    message: status === 'accepted' ? 'Anda yakin ingin mengambil proyek ini?' : 'Pesanan akan ditolak dan tidak dapat dikembalikan. Lanjutkan?'
+  }
+  showConfirm.value = true
+}
+
+const executeStatusUpdate = async () => {
+  showConfirm.value = false
+  const { id, status } = confirmData.value
+  
   try {
     await put(`/bookings/${id}`, { status })
     fetchData(pagination.value.current_page)
+    addToast(status === 'accepted' ? 'Pesanan berhasil diterima!' : 'Pesanan berhasil ditolak!', 'success')
   } catch (error) {
-    alert('Gagal memperbarui status')
+    addToast('Gagal memperbarui status', 'error')
   }
 }
 
