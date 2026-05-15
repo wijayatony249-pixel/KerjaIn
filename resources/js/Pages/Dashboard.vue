@@ -63,8 +63,8 @@
                 <td class="p-6"><StatusBadge :status="booking.status" /></td>
                 <td class="p-6">
                     <div class="flex gap-2">
-                        <button @click="updateBookingStatus(booking.id, 'accepted')" class="bg-[#1A56FF] text-white px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">Terima</button>
-                        <button @click="updateBookingStatus(booking.id, 'rejected')" class="bg-white/5 text-white/60 px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3366] hover:text-white transition-all">Tolak</button>
+                        <button @click="confirmStatusUpdate(booking.id, 'accepted')" class="bg-[#1A56FF] text-white px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">Terima</button>
+                        <button @click="confirmStatusUpdate(booking.id, 'rejected')" class="bg-white/5 text-white/60 px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3366] hover:text-white transition-all">Tolak</button>
                     </div>
                 </td>
               </tr>
@@ -119,6 +119,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Confirm Modal -->
+    <ConfirmModal 
+      :show="showConfirm" 
+      :title="confirmData.title" 
+      :message="confirmData.message" 
+      @confirm="executeStatusUpdate" 
+      @close="showConfirm = false" 
+    />
   </AppLayout>
 </template>
 
@@ -129,15 +138,21 @@ import AppLayout from '../Layouts/AppLayout.vue'
 import StatCard from '../Components/StatCard.vue'
 import StatusBadge from '../Components/StatusBadge.vue'
 import BackButton from '../Components/BackButton.vue'
+import ConfirmModal from '../Components/ConfirmModal.vue'
 import { useAuth } from '../composables/useAuth'
 import { useApi } from '../composables/useApi'
+import { useToast } from '../composables/useToast'
 
 const { isFreelancer } = useAuth()
 const { get, put } = useApi()
+const { addToast } = useToast()
 
 const bookings = ref([])
 const services = ref([])
 const stats = ref({ services: 0, totalBookings: 0, pendingBookings: 0, activeBookings: 0, doneBookings: 0 })
+
+const showConfirm = ref(false)
+const confirmData = ref({ id: null, status: null, title: '', message: '' })
 
 const fetchData = async () => {
   try {
@@ -160,12 +175,27 @@ const fetchData = async () => {
 const pendingBookings = computed(() => bookings.value.filter(b => b.status === 'pending'))
 const recentBookings = computed(() => bookings.value.slice(0, 5))
 
-const updateBookingStatus = async (id, status) => {
-  if (!confirm('Update status pesanan?')) return
+const confirmStatusUpdate = (id, status) => {
+  confirmData.value = {
+    id,
+    status,
+    title: status === 'accepted' ? 'Terima Pesanan?' : 'Tolak Pesanan?',
+    message: status === 'accepted' ? 'Anda yakin ingin mengambil proyek ini?' : 'Pesanan akan ditolak dan tidak dapat dikembalikan. Lanjutkan?'
+  }
+  showConfirm.value = true
+}
+
+const executeStatusUpdate = async () => {
+  showConfirm.value = false
+  const { id, status } = confirmData.value
+  
   try {
     await put(`/bookings/${id}`, { status })
     fetchData()
-  } catch (error) { alert('Gagal update status') }
+    addToast(status === 'accepted' ? 'Pesanan berhasil diterima!' : 'Pesanan berhasil ditolak!', 'success')
+  } catch (error) { 
+    addToast('Gagal memperbarui status', 'error')
+  }
 }
 
 const formatDate = (dateString) => {

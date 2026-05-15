@@ -139,10 +139,10 @@
             <div class="font-black text-2xl uppercase tracking-tighter mb-2">Booking Baru</div>
             <p class="text-white/80 text-[10px] mb-8 font-bold uppercase tracking-widest">Segera konfirmasi ketersediaan Anda untuk proyek ini.</p>
             <div class="space-y-3">
-              <button @click="updateStatus('accepted')" class="w-full bg-white text-[#FF3366] font-black py-4 rounded-lg hover:bg-white/90 transition-all uppercase tracking-widest text-xs">
+              <button @click="confirmStatusUpdate('accepted')" class="w-full bg-white text-[#FF3366] font-black py-4 rounded-lg hover:bg-white/90 transition-all uppercase tracking-widest text-xs">
                 Terima Proyek
               </button>
-              <button @click="updateStatus('rejected')" class="w-full bg-black/20 text-white font-black py-4 rounded-lg hover:bg-black/30 transition-all border border-white/10 uppercase tracking-widest text-xs">
+              <button @click="confirmStatusUpdate('rejected')" class="w-full bg-black/20 text-white font-black py-4 rounded-lg hover:bg-black/30 transition-all border border-white/10 uppercase tracking-widest text-xs">
                 Tolak
               </button>
             </div>
@@ -151,7 +151,7 @@
           <template v-if="isFreelancer && booking.status === 'accepted'">
             <div class="font-black text-2xl uppercase tracking-tighter mb-2">Pekerjaan Aktif</div>
             <p class="text-white/80 text-[10px] mb-8 font-bold uppercase tracking-widest">Tandai sebagai selesai setelah seluruh aset terkirim.</p>
-            <button @click="updateStatus('done')" class="w-full bg-white text-black font-black py-5 rounded-lg hover:bg-white/90 transition-all uppercase tracking-widest text-sm shadow-xl">
+            <button @click="confirmStatusUpdate('done')" class="w-full bg-white text-black font-black py-5 rounded-lg hover:bg-white/90 transition-all uppercase tracking-widest text-sm shadow-xl">
               Konfirmasi Selesai
             </button>
           </template>
@@ -198,6 +198,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Confirm Modal -->
+    <ConfirmModal 
+      :show="showConfirm" 
+      :title="confirmData.title" 
+      :message="confirmData.message" 
+      @confirm="executeStatusUpdate" 
+      @close="showConfirm = false" 
+    />
   </AppLayout>
 </template>
 
@@ -206,6 +215,7 @@ import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AppLayout from '../../Layouts/AppLayout.vue'
 import StatusBadge from '../../Components/StatusBadge.vue'
+import ConfirmModal from '../../Components/ConfirmModal.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'
 import { useToast } from '../../composables/useToast'
@@ -223,6 +233,9 @@ const messages = ref([])
 const newMessage = ref('')
 const messageContainer = ref(null)
 const pollInterval = ref(null)
+
+const showConfirm = ref(false)
+const confirmData = ref({ status: null, title: '', message: '' })
 
 const reviewForm = ref({
     rating: 5,
@@ -278,13 +291,26 @@ const sendMessage = async () => {
   }
 }
 
-const updateStatus = async (status) => {
-  if (!confirm(`Yakin ingin mengubah status pesanan?`)) return
+const confirmStatusUpdate = (status) => {
+  let title = 'Konfirmasi'
+  let message = 'Yakin ingin mengubah status pesanan?'
+  if (status === 'accepted') { title = 'Terima Proyek?'; message = 'Anda yakin ingin mengambil proyek ini?' }
+  else if (status === 'rejected') { title = 'Tolak Proyek?'; message = 'Proyek akan ditolak secara permanen. Lanjutkan?' }
+  else if (status === 'done') { title = 'Proyek Selesai?'; message = 'Tandai proyek ini sebagai selesai?' }
+
+  confirmData.value = { status, title, message }
+  showConfirm.value = true
+}
+
+const executeStatusUpdate = async () => {
+  showConfirm.value = false
+  const status = confirmData.value.status
   try {
     await put(`/bookings/${booking.value.id}`, { status })
     fetchBooking()
+    addToast('Status berhasil diupdate!', 'success')
   } catch (error) {
-    alert('Gagal memperbarui status')
+    addToast('Gagal memperbarui status', 'error')
   }
 }
 
